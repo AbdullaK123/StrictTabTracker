@@ -1,0 +1,21 @@
+[test]
+# Configure test environment
+coverage = true
+# Specify test file pattern
+testPattern = "tests/**/*.test.js"
+
+[bundle]
+# Entry points for your extension
+entrypoints = [
+    "./src/background/background.js",
+    "./src/popup/popup.js",
+    "./src/content/content.js"
+]
+# Where bundled files go
+outdir = "./dist"
+# Minify output
+minify = true
+
+# For development
+[dev]
+port = 3000
