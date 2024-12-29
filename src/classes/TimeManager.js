@@ -1,8 +1,9 @@
 class TimeManager {
     
     // constructor
-    constructor(storageManager) {
+    constructor(storageManager, timeLimit) {
         this.storageManager = storageManager;
+        this.timeLimit = timeLimit;
         this.activeTab = null;
         this.currentTimer = null;
     }
@@ -71,6 +72,9 @@ class TimeManager {
             timeData[today] = duration;
             
             await this.storageManager.set({ [url]: timeData });
+
+            // Check if we need to block after updating time
+            await this.checkAndBlockIfNeeded(url);
         } catch (error) {
             console.error('Error updating time data:', error);
         }
@@ -107,6 +111,43 @@ class TimeManager {
         } catch (error) {
             console.error('Error resetting daily timers:', error);
         }
+    }
+
+    // if the time limit is reached, send the block signal
+    async checkTimeLimit(url) {
+        try {
+            const timeData = await this.storageManager.get(url);
+            if (!timeData) return false;
+
+            const today = new Date().toDateString();
+            const dailyTime = timeData[today] || 0;
+
+            return dailyTime >= this.timeLimit;
+        } catch (error) {
+            console.error('Error checking time limit:', error);
+            return false;
+        }
+    }
+
+    async checkAndBlockIfNeeded(url) {
+        try {
+            const isBlocked = await this.checkTimeLimit(url);
+
+            if (isBlocked) {
+                // send the block signal
+                await chrome.runtime.sendMessage({
+                    type: 'BLOCK_URL',
+                    domain: url,
+                    timeData: await this.getTabStats(url)
+                })
+                return true
+            }
+            return false
+        } catch (error) {
+            console.error('Error checking time limit:', error);
+            return false;
+        }
+       
     }
 
     // method to get statistics for a specific URL
